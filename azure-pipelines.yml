@@ -1,0 +1,79 @@
+# Starter pipeline
+
+# Start with a minimal pipeline that you can customize to build and deploy your code.
+# Add steps that build, run tests, deploy, and more:
+# https://aka.ms/yaml
+
+trigger: none
+
+pool:
+  vmImage: ubuntu-latest
+
+parameters:
+- name: environments
+  type: object
+  default: 
+  - environmentName: 'dev'
+  - environmentName: 'qa' 
+- name: terraformVersion
+  type: string
+  default: 'latest'
+- name: AzureSubscriptionServiceConnectionName
+  type: string
+  default: 'ARGOCD_CONNECTION'
+- name: TerraformStateStorageAccountResourceGroupName
+  type: string
+  default: 'Infra'
+- name: TerraformStateStorageAccountName
+  type: string
+  default: 'infradxostorage'
+- name: TerraformStateStorageAccountContainerName
+  type: string
+  default: 'infradxocontainer'
+- name: Key
+  type: string
+  default: 'tfn-environments-vm.tfstate'
+- name: outputFile
+  default: 'tfn-environments-vm.tfplan'
+- name: additionalParameters
+  type: object
+  default: []
+- name: publishPlanResults
+  default: 'plan'
+
+jobs:
+- job: TerraformTemplate
+  displayName: 'Environment VM Creation'
+  pool:
+    vmImage: 'ubuntu-latest'
+
+  steps:
+    - task: TerraformInstaller@1
+      displayName: install terraform
+      inputs:
+          terraformVersion: ${{ parameters.terraformVersion }}
+
+
+
+    - task: TerraformTaskV4@4
+      displayName: Initialize Terraform
+      inputs:
+        provider: 'azurerm'
+        command: 'init'
+        backendServiceArm: ${{ parameters.AzureSubscriptionServiceConnectionName }}
+        backendAzureRmResourceGroupName: ${{ parameters.TerraformStateStorageAccountResourceGroupName }}
+        backendAzureRmStorageAccountName: ${{ parameters.TerraformStateStorageAccountName }}
+        backendAzureRmContainerName: ${{ parameters.TerraformStateStorageAccountContainerName }}
+        backendAzureRmKey: ${{ parameters.Key }}
+
+    - task: TerraformTaskV4@4
+      displayName: Validating Terraform
+      inputs:
+        provider: 'azurerm'
+        command: 'validate'
+        
+ 
+    - ${{ each item in parameters.environments }}:
+        - template: azure_vm_template.yml
+          parameters:
+            templateenv: ${{ item.environmentName }}

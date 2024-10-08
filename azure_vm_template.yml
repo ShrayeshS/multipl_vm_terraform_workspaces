@@ -1,0 +1,64 @@
+parameters:
+- name: publishPlanResults
+  displayName: 'option to publish plan'
+  type: string
+  default: 'plan'
+
+- name: additionalParameters
+  displayName: 'Additional Parameters'
+  type: object
+  default: []
+  
+- name: outputFile
+  displayName: 'Output file'
+  type: string
+  default: 'terraformworkspace.tfplan' 
+
+- name: templateenv
+  displayName: 'Env Name'
+  type: string
+  
+steps:
+
+  - script: |
+      
+        #!/bin/bash
+        WORKSPACE_NAME=${{ parameters.templateenv }}
+        WORKSPACE_EXISTS=$(terraform workspace list | grep -c "$WORKSPACE_NAME")
+
+        if [ $WORKSPACE_EXISTS -eq 0 ]; then
+            terraform workspace new $WORKSPACE_NAME
+            echo "Created workspace $WORKSPACE_NAME."
+        else
+            echo "Workspace $WORKSPACE_NAME already exists."
+        fi
+
+        # Switch to the workspace
+        terraform workspace select $WORKSPACE_NAME
+        echo "Switched to workspace $WORKSPACE_NAME."
+    displayName: 'Switching Workspace to ${{ parameters.templateenv }}'
+
+  - task: TerraformTaskV4@4
+    displayName: 'Terraform Plan - ${{ parameters.templateenv }}'
+    inputs:
+      provider: 'azurerm'
+      command: 'plan'
+      environmentServiceNameAzureRM: 'ARGOCD_CONNECTION'
+      publishPlanResults: ${{ parameters.publishPlanResults }}
+      commandOptions: "-lock=false ${{ join(' ', parameters.additionalParameters) }} ${{ format(' -var-file={0}.tfvars', parameters.templateenv) }} -out=$(System.DefaultWorkingDirectory)/${{ parameters.outputFile }} -detailed-exitcode"
+  
+#  - task: TerraformTaskV4@4
+#    displayName: 'Terraform Apply - ${{ parameters.templateenv }}'
+#    #condition: and(succeeded(), eq(parameters['TERRAFORM_PLAN_HAS_CHANGES'],'true'))
+#    inputs:
+#      provider: 'azurerm'
+#      command: 'apply'
+#      commandOptions: '$(System.DefaultWorkingDirectory)/terraformworkspace.tfplan'
+#      environmentServiceNameAzureRM: 'ARGOCD_CONNECTION'
+        
+  - task: TerraformTaskV4@4
+    displayName: 'Terraform Destroy - ${{ parameters.templateenv }}'
+    inputs:
+      provider: 'azurerm'
+      command: 'destroy'
+      environmentServiceNameAzureRM: 'ARGOCD_CONNECTION'

@@ -1,0 +1,20 @@
+variables:
+  - name: terraformVersion
+    value: 'latest'
+  - name: AzureSubscriptionServiceConnectionName
+    value: 'ARGOCD_CONNECTION'
+  - name: TerraformStateStorageAccountResourceGroupName
+    value: 'Infrastructure'
+  - name: TerraformStateStorageAccountName
+    value: 'infrastoragedxo'
+  - name: TerraformStateStorageAccountContainerName
+    value: 'infracontainerdxo'
+  - name: Key
+    value: 'tfn.tfstate'
+  - name: outputFile
+    value: 'tfn.tfplan'
+  - name: additionalParameters
+    type: object
+    value: []
+  - name: publishPlanResults #The dotnet project that holds the application code
+    value: 'plan'

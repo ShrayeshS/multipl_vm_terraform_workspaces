@@ -1,0 +1,11 @@
+locals environments = {
+    "qa" = {
+      subnet_cidr = "10.1.3.0/24"
+      vm_count = 2
+    }
+    "sit" = {
+      subnet_cidr = "10.1.4.0/24"
+      vm_count = 2
+    }
+  }
+}
